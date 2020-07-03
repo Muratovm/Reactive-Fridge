@@ -1,0 +1,23 @@
+button{
+    border: 0px;
+}
+
+.btn_recruiters{
+    display: flex;
+    position: relative;
+    float: right;
+    clear: both;
+}
+
+.text_button{
+    background-color: #8782DF;
+    color: white;
+    padding: 15px;
+    justify-content: center;
+}
+
+.arrow_button{
+    padding: 20px;
+    background-color: #0E1056;
+    color: white;
+}

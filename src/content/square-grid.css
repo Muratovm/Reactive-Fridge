@@ -1,0 +1,6 @@
+.square_grid{
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    margin: 0 30px 0px 10px;
+    column-gap: 30px;
+}

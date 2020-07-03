@@ -1,0 +1,34 @@
+.linear_menu{
+    display:flex;
+    list-style-type: none;
+    width: fit-content;
+    flex-basis: auto;
+    margin-top: 0px;
+}
+
+.left{
+    margin-left: auto;
+}
+
+.center{
+    margin: auto;
+}
+
+.right{
+    margin-right: auto;
+}
+
+
+.item_background li{
+    padding: 20px;
+    width: fit-content;
+    background-color: #0E1056;
+    color: white;
+}
+
+.no_background li{
+    padding: 20px;
+    width: fit-content;
+    color: gray;
+}
+
