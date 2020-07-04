@@ -8,49 +8,12 @@ import Card from '@material-ui/core/Card';
 import Typography from '@material-ui/core/Typography';
 import Grid from '@material-ui/core/Grid';
 import Paper from '@material-ui/core/Paper';
+import time_since from "./time/Duration";
+import {FoodItem,FoodGroup,FoodList} from "./fridge/Food.jsx";
 
 import axios from "axios";
 
 export const API_URL = "http://192.168.2.12:8000/api/fridge/groups";
-
-
-function last_update(){
-  const date = new Date(2020, 6, 10, 16, 2, 0, 0);
-  const current_time = new Date();
-  var timezone_diff = current_time.getTimezoneOffset()/60;
-  current_time.setHours(current_time.getHours() + 4 - timezone_diff)
-  let time = ""
-
-  
-  const minute_diff = current_time.getMinutes() - date.getMinutes()
-  const hour_diff = current_time.getHours() - date.getHours()
-  const day_diff = current_time.getDay() - date.getDay()
-
-  const d = day_diff > 0
-  const min = minute_diff > 0
-  const h = hour_diff > 0
-  const d_h = d && h
-  const h_min = h && min
-
-  if (d){
-    time += day_diff + " days"
-  }
-  if(d_h){
-    time += " and "
-  }
-  if(h){
-    time += hour_diff + " h"
-  }
-  if(h_min && !d){
-    time += " and "
-    time += minute_diff + " minutes"
-  }
-  if(min && !d && !h){
-    time += minute_diff + " minutes"
-  }
-
-return <p style={{margin:"auto",width:"fit-content", paddingBottom:"25px",fontSize:"20px"}} >Last updated: {time} ago</p>
-}
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -77,57 +40,19 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-class FoodList extends React.Component{
-  constructor(props){
-    super(props);
-  }
-  render(){
-  const mystyle = {
-    margin:"auto",
-    width:"fit-content", 
-    padding:"0",
-  };
-    return <ul style={mystyle}>{this.props.children} </ul>
-  }
-}
-
-class FoodGroup extends React.Component{
-  constructor(props){
-    super(props);
-  }
-  render(){
-    const mystyle = {
-      margin:"auto",
-      width:"fit-content", 
-      fontSize:"30px",
-      fontWeight: "bold",
-      paddingBottom: "10px",
-      color:"#707070",
-    };
-    return <Typography style={mystyle}>{this.props.children}</Typography>
-  }
-}
-
-class FoodItem extends React.Component{
-  constructor(props){
-    super(props);
-  }
-  render(){
-    const mystyle = {
-      margin: "auto",
-      width:"fit-content", 
-    };
-    return <div style={mystyle}>{this.props.children} </div>
-  }
-}
-
 class AppData extends React.Component{
   constructor(props) {
     super(props);
     this.state = {
       error: null,
       isLoaded: false,
-      apartment: []
+      apartment: [],
+      foodTitle:'',
+      foodGroup:'',
+      datetime:'',
+      amount: 0,
+      image: null,
+
     };
   }
 
@@ -140,7 +65,49 @@ class AppData extends React.Component{
     }
     );
   }
+  
+  handleChange = (e) => {
+    this.setState({
+      [e.target.id]: e.target.value
+    })
+  };
 
+  handleImageChange = (e) => {
+    this.setState({
+      image: e.target.files[0]
+    })
+  };
+
+  handleSubmit = (e) => {
+    e.preventDefault();
+    console.log(this.state);
+    let form_data = new FormData();
+    form_data.append('item', this.state.foodTitle);
+    form_data.append('group_name', this.state.foodGroup);
+    form_data.append('amount', this.state.amount);
+
+    let date = new Date(this.state.datetime)
+    let utc = date.toISOString();
+
+    form_data.append('updated', utc);
+    form_data.append('image', this.state.image, this.state.image.name);
+    let url = 'http://192.168.2.12:8000/api/fridge/upload';
+    axios.post(url, form_data, {
+      headers: {
+        'content-type': 'multipart/form-data'
+      }
+    })
+        .then(res => {
+          console.log(res.data);
+          axios.get(API_URL).then(res =>{
+            this.setState({
+              isLoaded: true,
+              apartment: res.data
+            });
+          });
+        })
+        .catch(err => console.log(err))
+  };
 
   render() {
 
@@ -164,15 +131,9 @@ class AppData extends React.Component{
             let amount = food['amount']
             let date_string = food['updated'];
             let image = food['image']
+            var past_date = new Date(date_string); 
 
-            var right_now = new Date();
-            var date = new Date(date_string); 
-
-            var Difference_In_Time = right_now.getTime() - date.getTime(); 
-
-            var days = Math.floor(Difference_In_Time / (1000*3600*24));
-            var hours = Math.floor(((Difference_In_Time-days*(1000*3600*24)) / (1000*3600)));
-            var minutes = Math.floor(((Difference_In_Time-days*(1000*3600*24)-hours*(1000*3600)) / (1000*60)));
+            let time = time_since(past_date);
 
             return(
             <FoodItem key={name}>
@@ -180,7 +141,7 @@ class AppData extends React.Component{
               <img src={image} width="200px" height="200px" ></img>
                 <Typography style={{fontSize:"25px"}}>
                   {amount} {name}
-                  <span className="tooltiptext">{days} Days, {hours} hours and {minutes} minutes ago</span>
+            <span className="tooltiptext"> {time} ago</span>
                   </Typography>
               </div>
             </FoodItem>
@@ -209,6 +170,26 @@ class AppData extends React.Component{
             <Grid container spacing={5} style={{paddingTop:"50px", margin:"auto"}}>
               {listItems}
             </Grid>
+            
+        <form onSubmit={this.handleSubmit}>
+          
+          <label>Food: </label>
+          <input type="text" id="foodTitle" value={this.state.foodTitle} onChange={this.handleChange}/><br/>
+          
+          <label>Group: </label>
+          <input type="text" id="foodGroup" value={this.state.foodGroup} onChange={this.handleChange}/><br/>
+
+          <label>Amount: </label>
+          <input type="number" id="amount" name="amount_input" value={this.state.amount} onChange={this.handleChange}/><br/>
+
+          <input type="datetime-local" id="datetime" name="datetime_input" value={this.state.datetime} onChange={this.handleChange}/><br/>
+
+          <input type="file" id="image" accept="image/png, image/jpeg"  
+                  onChange={this.handleImageChange} 
+                  required/><br></br>
+          <input type="submit"/>
+        </form>
+
         </div>
       );
     }
