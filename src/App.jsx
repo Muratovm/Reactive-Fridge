@@ -10,6 +10,7 @@ import Grid from '@material-ui/core/Grid';
 import Paper from '@material-ui/core/Paper';
 import time_since from "./time/Duration";
 import {FoodItem,FoodGroup,FoodList} from "./fridge/Food.jsx";
+import Popper from '@material-ui/core/Popper';
 
 import axios from "axios";
 
@@ -55,6 +56,9 @@ class AppData extends React.Component{
 
     };
   }
+
+  
+  
 
   componentDidMount() {
     axios.get(API_URL).then(res =>{
@@ -109,6 +113,27 @@ class AppData extends React.Component{
         .catch(err => console.log(err))
   };
 
+  
+  deleteEntry = (e,food_id) =>{
+    let url = 'http://192.168.2.12:8000/api/fridge/delete';
+    axios.post(url, {
+      id: food_id
+    })
+    .then(res => {
+      console.log(res.data);
+      axios.get(API_URL).then(res =>{
+        this.setState({
+          isLoaded: true,
+          apartment: res.data
+        });
+      }
+      );
+    })
+    .catch(function (error) {
+      console.log(error);
+    });
+  };
+
   render() {
 
     const { error, isLoaded, apartment } = this.state;
@@ -124,7 +149,6 @@ class AppData extends React.Component{
         //Create a list which initially holds the heading of the food group
         let heading = [<FoodGroup key ={group_name + "heading"}>{group_name}</FoodGroup>];
         //Iterate through the foodgroup list and generate typography for each food item
-        
         const listfood = foodgroup.map(function (food){
             let name = food['item'];
             let id = food['id']
@@ -143,11 +167,15 @@ class AppData extends React.Component{
                   {amount} {name}
             <span className="tooltiptext"> {time} ago</span>
                   </Typography>
+              
               </div>
+              <button onClick={(e)=> this.editEntry(e,id)}>Edit</button>
+              <button onClick={(e)=> this.deleteEntry(e,id)}>Delete</button>
+              
             </FoodItem>
             );
           }
-        );
+        ,this);
     
         //Add the food items to the heading
         let newfood = heading.concat(<FoodList key = {group_name + " list"}>{listfood}</FoodList>);
@@ -159,7 +187,7 @@ class AppData extends React.Component{
           </Grid>
         )
       }
-      );
+      ,this);
 
       return (
         <div className="App unselectable">
@@ -189,8 +217,8 @@ class AppData extends React.Component{
                   required/><br></br>
           <input type="submit"/>
         </form>
-
         </div>
+        
       );
     }
   }
